@@ -111,6 +111,12 @@ static CGEventRef eventTapCallback(CGEventTapProxy proxy, CGEventType type,
 		 */
 		if (nsev.subtype == NX_SUBTYPE_AUX_CONTROL_BUTTONS)
 			is_key_event = 1;
+		#define NX_SUBTYPE_SWITCH_ABC		211
+		// When "Use Caps Lock key to switch to and from ABC" is enabled,
+        // the system emits an additional event after Caps Lock (and occasionally after other keys).
+		else if (nsev.subtype == NX_SUBTYPE_SWITCH_ABC) {
+			return event;
+		}
 
 		break;
 	case kCGEventFlagsChanged: /* modifier codes */
@@ -150,7 +156,7 @@ static CGEventRef eventTapCallback(CGEventTapProxy proxy, CGEventType type,
 		break;
 	}
 
-	if (!is_key_event)
+	if (!is_key_event || !code)
 		return event;
 
 	if (pressed == 1)
