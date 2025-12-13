@@ -1,36 +1,48 @@
-VERSION=1.3.5
-PREFIX?=/usr/local
-COMMITSTR=$(shell commit=$$(git rev-parse --short HEAD 2> /dev/null) && echo " (built from: $$commit)")
+.PHONY: all man clean
 
-ifeq ($(shell uname -s), Darwin)
-	PLATFORM?=macos
-endif
+BIN=warpd
+CMAKE=cmake
+BUILD_DIR=build
+MAN=files/warpd.1.gz
+CFLAGS=
 
-ifeq ($(PLATFORM), macos)
-	VERSION:=$(VERSION)-osx
-endif
+all: $(BUILD_DIR) man
+	$(CMAKE) -S . -B $(BUILD_DIR) -DCMAKE_C_FLAGS="$(CFLAGS)"
+	$(CMAKE) --build $(BUILD_DIR) --target $(BIN) -j 10
 
-%.o: %.c Makefile mk/*.mk
-	$(CC) -c $< -o $@ $(CFLAGS)
+$(BUILD_DIR):
+	@mkdir -p $(BUILD_DIR)
 
-CFLAGS:=-g\
-       -Wall\
-       -Wextra\
-       -pedantic\
-       -Wno-deprecated-declarations\
-       -Wno-unused-parameter\
-       -std=c99\
-       -DVERSION='"v$(VERSION)$(COMMITSTR)"'\
-       -D_DEFAULT_SOURCE \
-       -D_FORTIFY_SOURCE=2  $(CFLAGS)
+HAS_SCDOC := $(shell command -v scdoc 2>/dev/null)
 
-ifeq ($(PLATFORM), macos)
-	include mk/macos.mk
-else ifeq ($(PLATFORM), windows)
-	include mk/windows.mk
+man: $(BUILD_DIR)
+ifeq ($(HAS_SCDOC),)
+	@echo "scdoc not found, skipping man page generation"
 else
-	include mk/linux.mk
+	scdoc < warpd.1.md | gzip > $(MAN)
 endif
 
-man:
-	scdoc < warpd.1.md | gzip > files/warpd.1.gz
+clean:
+	@rm -rf $(BUILD_DIR)
+
+ifndef PLATFORM
+    UNAME_S := $(shell uname -s 2>/dev/null)
+    ifeq ($(UNAME_S), Darwin)
+        PLATFORM := macos
+    else ifeq ($(UNAME_S), Linux)
+        PLATFORM := linux
+    else ifneq ($(OS),)
+        ifeq ($(OS), Windows_NT)
+            PLATFORM := windows
+        endif
+    endif
+    PLATFORM ?= linux
+endif
+
+ifeq ($(PLATFORM), macos)
+    include mk/macos.mk
+else ifeq ($(PLATFORM), windows)
+    include mk/windows.mk
+else
+    include mk/linux.mk
+endif

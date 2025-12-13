@@ -131,7 +131,7 @@ static void print_usage()
 
 static void print_version()
 {
-	printf("warpd " VERSION"\n");
+	printf("warpd %s\n", VERSION);
 }
 
 
@@ -309,7 +309,7 @@ int main(int argc, char *argv[])
 			daemonize();
 
 		setvbuf(stdout, NULL, _IOLBF, 0);
-		printf("Starting warpd " VERSION "\n");
+		printf("Starting warpd  %s\n", VERSION);
 
 		platform_run(daemon_main);
 	}
